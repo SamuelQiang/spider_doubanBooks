@@ -1,0 +1,96 @@
+#-*- codeing = utf-8 -*-
+#@time : $(DATA) $(TIME)
+#@Author : samuelzhang
+#@File :  $(NAME).py
+#@Software : PyCharm
+
+import requests,xlwt
+from lxml import etree
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
+}
+headers1 = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'
+}
+workbook = xlwt.Workbook(encoding='utf-8')
+worksheet1 = workbook.add_sheet('历史', cell_overwrite_ok=True)
+worksheet2 = workbook.add_sheet('传记', cell_overwrite_ok=True)
+worksheet1.write(0,0,'书的名称')
+worksheet2.write(0,0,'书的名称')
+worksheet1.write(0,1,'书的作者及出版信息')
+worksheet2.write(0,1,'书的作者及出版信息')
+list1 = []
+row1 = 1
+list2 = []
+row2 = 1
+
+
+def parser_url1(url1):
+    res = requests.get(url1,headers = headers).text
+    html = etree.HTML(res)
+    lis = html.xpath('//li[@class="subject-item"]')
+    for li in lis:
+        dushu={}
+        title = li.xpath('.//div[@class="info"]/h2/a/text()')
+        if title:
+            dushu['title']=li.xpath('.//div[@class="info"]/h2/a/text()')[0].strip()
+        else:pass
+        auth = li.xpath('.//div[@class="pub"]/text()')
+        if auth:
+            dushu['auth']=li.xpath('.//div[@class="pub"]/text()')[0].strip()
+        else:pass
+        if dushu:
+            dushu2 = dushu
+            list1.append(dushu2)
+def parser_url2(url2):
+    res = requests.get(url2,headers = headers1).text
+    html = etree.HTML(res)
+    lis = html.xpath('//li[@class="subject-item"]')
+    for li in lis:
+        dushu={}
+        title = li.xpath('.//div[@class="info"]/h2/a/text()')
+        if title:
+            dushu['title']=li.xpath('.//div[@class="info"]/h2/a/text()')[0].strip()
+        else:
+            pass
+        auth = li.xpath('.//div[@class="pub"]/text()')
+        if auth:
+            dushu['auth']=li.xpath('.//div[@class="pub"]/text()')[0].strip()
+        else:
+            pass
+        if dushu:
+            dushu1 = dushu
+            list2.append(dushu1)
+def write_to_excel1(list1):
+    global row1
+    for lis in list1:
+        lie = 0
+        for k, v in lis.items():
+            worksheet1.write(row1, lie, v)
+            lie += 1
+        row1 += 1
+def write_to_excel2(list2):
+    global row2
+    for lis in list2:
+        lie = 0
+        for k, v in lis.items():
+            worksheet2.write(row2, lie, v)
+            lie += 1
+        row2 += 1
+if __name__ == '__main__':
+    for i in range(0,2):
+        print('开始爬取第{}页'.format(i+1))
+        url1 = "https://book.douban.com/tag/%E5%8E%86%E5%8F%B2?start={}&type=T".format(i*20)
+        parser_url1(url1)
+    #print("打印出全部的信息: ", list)#自己查看打印出的内容
+    print("历史类爬取完毕一共{}本书, 开始存入excel文件".format(len(list1)))
+    write_to_excel1(list1)
+    for i in range(0,2):
+        print('开始爬取第{}页'.format(i+1))
+        url2 = "https://book.douban.com/tag/%E4%BC%A0%E8%AE%B0?start={}&type=T".format(i*20)
+        parser_url2(url2)
+    #print("打印出全部的信息: ", list)#自己查看打印出的内容
+    print("传记类爬取完毕一共{}本书, 开始存入excel文件".format(len(list2)))
+    write_to_excel2(list2)
+    workbook.save('豆瓣书籍爬取.xls')
+    print("finish the spider of douban_book")
